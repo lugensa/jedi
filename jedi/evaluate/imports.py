@@ -295,6 +295,7 @@ class Importer(object):
                 return set()
             else:
                 debug.dbg('search_module %s in paths %s', module_name, paths)
+                module_path = None
                 for path in paths:
                     # At the moment we are only using one path. So this is
                     # not important to be correct.
@@ -303,7 +304,7 @@ class Importer(object):
                             find_module(import_parts[-1], [path])
                         break
                     except ImportError:
-                        module_path = None
+                        pass
                 if module_path is None:
                     _add_error(self._evaluator, import_path[-1])
                     return set()
