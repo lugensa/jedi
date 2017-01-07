@@ -249,6 +249,7 @@ class Importer(object):
         """
         This method is very similar to importlib's `_gcd_import`.
         """
+        from jedi.evaluate.representation import ModuleWrapper
         import_parts = [str(i) for i in import_path]
 
         # Handle "magic" Flask extension imports:
@@ -346,6 +347,18 @@ class Importer(object):
             # The file might raise an ImportError e.g. and therefore not be
             # importable.
             return set()
+
+        # mg (2017-01-07): jedi behaves different if a module
+        # is from cache or not. I was not able to fix the
+        # problem. The difference between cached and none
+        # cached modules has been the ModuleWrapper in the load
+        # function. The problem could have been that wrong
+        # types got wrapped by ModuleWrapper.
+        # The workaround is to let _load do its job
+        # and set the _parent_module here.
+        if isinstance(module, ModuleWrapper):
+            if parent_module and not module._parent_module:
+                module._parent_module = parent_module
 
         self._evaluator.modules[module_name] = module
         return set([module])
@@ -449,8 +462,7 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
         p = path
         p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
         save_parser(path, p)
-        from jedi.evaluate.representation import ModuleWrapper
-        return ModuleWrapper(evaluator, p.module, parent_module)
+        return p.module
 
     if sys_path is None:
         sys_path = evaluator.sys_path
