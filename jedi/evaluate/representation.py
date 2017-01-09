@@ -827,6 +827,17 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
         yield self._sub_modules_dict()
 
+    def is_namespace_package(self):
+        namespace_markers = (
+            'declare_namespace(__name__)', 'extend_path(__path__')
+        _code = self.get_code()
+        _is_namespace_package = False
+        for marker in namespace_markers:
+            if marker in _code:
+                _is_namespace_package = True
+                break
+        return _is_namespace_package
+
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
     # to push the star imports into Evaluator.modules, if we reenable this.
@@ -945,15 +956,26 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         package).
         """
         path = self._module.path
+        if path is None:
+            return {}
+
+        paths = []
+        if self.is_namespace_package():
+            paths = [os.path.join(p, '__init__.py')
+                     for p in self.py__path__()]
+        elif path.endswith(os.path.sep + '__init__.py'):
+            paths = [path]
+
         names = {}
-        if path is not None and path.endswith(os.path.sep + '__init__.py'):
+        for path in paths:
             mods = pkgutil.iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
                 fake_n = helpers.FakeName(name)
                 # It's obviously a relative import to the current module.
                 imp = helpers.FakeImport(fake_n, self, level=1)
                 fake_n.parent = imp
-                names[name] = [fake_n]
+                if name not in names:
+                    names[name] = [fake_n]
 
         # TODO add something like this in the future, its cleaner than the
         #   import hacks.
