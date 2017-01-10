@@ -78,7 +78,6 @@ def test_namespace_pkgs_have_valid_completions_on_absolute_module_path():
     completions = script_with_path(
         "import pkg.subpkg; pkg.subpkg.").completions()
     names = [str(c.name) for c in completions]
-    print names
     compare = ['foo', 'ns4_folder',  'ns3_folder',
                'pkg_resources', 'pkgutil', '__name__', '__path__',
                '__package__', '__file__', '__doc__']
