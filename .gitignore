@@ -11,3 +11,4 @@
 jedi.egg-info/
 record.json
 /.cache/
+.python-version
